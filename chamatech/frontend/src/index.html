@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChamaTech</title>
+</head>
+<body>
+  <!-- Página provisória: a Isadora vai substituir pelas telas reais -->
+  <h1>ChamaTech</h1>
+  <p>Status da API: <span id="status">verificando...</span></p>
+  <script>
+    fetch("/api/health")
+      .then(r => r.json())
+      .then(d => document.getElementById("status").textContent = d.status)
+      .catch(() => document.getElementById("status").textContent = "indisponível");
+  </script>
+</body>
+</html>

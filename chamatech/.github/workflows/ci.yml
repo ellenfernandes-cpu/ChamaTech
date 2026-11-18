@@ -1,0 +1,25 @@
+# Pipeline inicial (Ana Clara pode ampliar com testes e lint)
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build da imagem do backend
+        run: docker build -t chamatech-api:ci ./backend
+
+      - name: Build da imagem do frontend
+        run: docker build -t chamatech-frontend:ci ./frontend
+
+      - name: Valida o docker-compose
+        run: |
+          cp .env.example .env
+          docker compose config --quiet

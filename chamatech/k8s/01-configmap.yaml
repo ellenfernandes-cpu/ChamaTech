@@ -1,0 +1,11 @@
+# Configurações NÃO sensíveis
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: chamatech-config
+  namespace: chamatech
+data:
+  APP_ENV: "k8s"
+  POSTGRES_DB: "chamatech"
+  POSTGRES_HOST: "db"
+  POSTGRES_PORT: "5432"

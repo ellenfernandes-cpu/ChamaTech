@@ -1,0 +1,75 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: chamatech-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [backend]
+
+  api:
+    build: ./backend
+    image: chamatech-api:latest
+    container_name: chamatech-api
+    environment:
+      APP_ENV: ${APP_ENV}
+      DATABASE_URL: ${DATABASE_URL}
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy   # só sobe a API quando o banco estiver pronto
+    networks: [backend, frontend]
+
+  frontend:
+    build: ./frontend
+    image: chamatech-frontend:latest
+    container_name: chamatech-frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api
+    networks: [frontend]
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: chamatech-prometheus
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+    networks: [backend]
+
+  grafana:
+    image: grafana/grafana:11.3.0
+    container_name: chamatech-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD}
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks: [backend]
+
+volumes:
+  db_data:
+  grafana_data:
+
+networks:
+  backend:
+  frontend:
