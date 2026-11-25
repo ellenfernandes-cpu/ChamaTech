@@ -1,23 +1,37 @@
-"""
-API mínima do ChamaTech (ESBOÇO).
-
-Serve para a Ellen testar os Dockerfiles, o Compose e o Kubernetes
-enquanto a Ana Clara desenvolve a API de verdade (autenticação, CRUD de chamados).
-A Ana Clara pode substituir este arquivo à vontade, mantendo /health e /metrics.
-"""
 import os
 import time
-
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from prometheus_client import Counter, Histogram, make_asgi_app
 
-app = FastAPI(title="ChamaTech API", version="0.1.0")
+from .database import engine, Base
+from . import models
+
+Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title="ChamaTech API",
+    description="API de suporte ao cliente (Help Desk) - Projeto DevOps CEUB",
+    version="0.1.0",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 REQUESTS = Counter(
-    "http_requests_total", "Total de requisições", ["method", "path", "status"]
+    "http_requests_total",
+    "Total de requisições",
+    ["method", "path", "status"],
 )
 LATENCY = Histogram(
-    "http_request_duration_seconds", "Latência das requisições", ["method", "path"]
+    "http_request_duration_seconds",
+    "Latência das requisições",
+    ["method", "path"],
 )
 
 
@@ -32,15 +46,14 @@ async def metrics_middleware(request: Request, call_next):
     return response
 
 
-# Endpoint de métricas lido pelo Prometheus
 app.mount("/metrics", make_asgi_app())
-
-
-@app.get("/health")
-def health():
-    return {"status": "ok", "service": "api", "env": os.getenv("APP_ENV", "dev")}
 
 
 @app.get("/")
 def root():
-    return {"message": "ChamaTech API no ar"}
+    return {"message": "ChamaTech API online"}
+
+
+@app.get("/health", tags=["Sistema"])
+def health():
+    return {"status": "ok", "service": "api", "env": os.getenv("APP_ENV", "dev")}
